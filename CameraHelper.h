@@ -6,17 +6,14 @@
 //  Copyright (c) 2013年 biando. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
-
-@import MobileCoreServices;
-@import UIKit;
+#import <UIKit/UIKit.h>
 
 @protocol CameraHelperDelegate;
 
 @interface CameraHelper : NSObject<UIImagePickerControllerDelegate, UINavigationControllerDelegate>
 
-@property (nonatomic, assign) id<CameraHelperDelegate> delegate;
-@property (nonatomic, assign) UIViewController *rootViewController;
+@property (nonatomic,   weak) id<CameraHelperDelegate> delegate;
+@property (nonatomic, strong) UIViewController *rootViewController;
 
 - (void)startCamera;
 - (void)startRecordingVideo;

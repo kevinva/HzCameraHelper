@@ -8,6 +8,7 @@
 
 #import "CameraHelper.h"
 #import "UIImage+fixOrientation.h"
+#import <AVFoundation/AVFoundation.h>
 
 #define KevinDebug
 
@@ -22,12 +23,6 @@
 
 @implementation CameraHelper
 
-- (void)dealloc{
-    self.delegate = nil;
-    self.rootViewController = nil;
-    
-    [super dealloc];
-}
 
 #pragma mark - Public Methods
 
@@ -41,19 +36,54 @@
 
 - (void)startCamera{
     if(_rootViewController){
-        if([self isCameraAvailable] && [self doesCameraSupportTakingPhotos]){
-            UIImagePickerController *pickerController = [[[UIImagePickerController alloc] init] autorelease];
-            pickerController.sourceType = UIImagePickerControllerSourceTypeCamera;
-            pickerController.mediaTypes = @[(NSString *)kUTTypeImage];
-            pickerController.allowsEditing = NO;
-            pickerController.showsCameraControls = YES;
-            pickerController.delegate = self;
-            [_rootViewController presentViewController:pickerController animated:YES completion:nil];
-        }else{
-            
-#ifdef KevinDebug
-            NSLog(@"Camera is not available.");
+        NSString *mediaType = AVMediaTypeVideo;
+        AVAuthorizationStatus authStatus = [AVCaptureDevice authorizationStatusForMediaType:mediaType];
+        if(authStatus == AVAuthorizationStatusDenied || authStatus == AVAuthorizationStatusRestricted){
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"提示"
+                                                            message:@"请在设备的\"设置-隐私-相机\"中允许访问相机。"
+                                                           delegate:nil
+                                                  cancelButtonTitle:@"确定"
+                                                  otherButtonTitles:nil];
+            [alert show];
+        }
+        else if(authStatus == AVAuthorizationStatusAuthorized){
+            if([self isCameraAvailable] && [self doesCameraSupportTakingPhotos]){
+                UIImagePickerController *pickerController = [[UIImagePickerController alloc] init];
+                pickerController.sourceType = UIImagePickerControllerSourceTypeCamera;
+                pickerController.mediaTypes = @[(NSString *)kUTTypeImage];
+                pickerController.allowsEditing = NO;
+                pickerController.showsCameraControls = YES;
+                pickerController.delegate = self;
+                [_rootViewController presentViewController:pickerController animated:YES completion:nil];
+            }else{
+                
+#ifdef DEBUG
+                NSLog(@"Camera is not available.");
 #endif
+                
+            }
+        }else if(authStatus == AVAuthorizationStatusNotDetermined){
+            [AVCaptureDevice requestAccessForMediaType:mediaType completionHandler:^(BOOL granted) {
+                
+                if(granted){
+                    if([self isCameraAvailable] && [self doesCameraSupportTakingPhotos]){
+                        UIImagePickerController *pickerController = [[UIImagePickerController alloc] init];
+                        pickerController.sourceType = UIImagePickerControllerSourceTypeCamera;
+                        pickerController.mediaTypes = @[(NSString *)kUTTypeImage];
+                        pickerController.allowsEditing = NO;
+                        pickerController.showsCameraControls = YES;
+                        pickerController.delegate = self;
+                        [_rootViewController presentViewController:pickerController animated:YES completion:nil];
+                    }else{
+                        
+#ifdef DEBUG
+                        NSLog(@"Camera is not available.");
+#endif
+                        
+                    }
+                }
+                
+            }];
             
         }
     }
@@ -62,7 +92,7 @@
 - (void)startRecordingVideo{
     if(_rootViewController){
         if([self isCameraAvailable] && [self doesCameraSupportRecordingVideos]){
-            UIImagePickerController *pickerController = [[[UIImagePickerController alloc] init] autorelease];
+            UIImagePickerController *pickerController = [[UIImagePickerController alloc] init];
             pickerController.sourceType = UIImagePickerControllerSourceTypeCamera;
             pickerController.mediaTypes = @[(NSString *)kUTTypeMovie];
             pickerController.allowsEditing = NO;
